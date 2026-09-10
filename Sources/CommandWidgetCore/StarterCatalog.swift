@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 public enum StarterCatalog {
-    public static let currentVersion = 2
+    public static let currentVersion = 4
 
     public static let entries: [CommandEntry] = CommandOrdering.normalized(
         KubernetesCatalog.entries
@@ -11,6 +11,10 @@ public enum StarterCatalog {
             + LinuxCatalog.entries
             + AnsibleCatalog.entries
             + TerraformCatalog.entries
+            + OllamaCatalog.entries
+            + CrowdSecCatalog.entries
+            + MattermostCatalog.entries
+            + GitCatalog.entries
     )
 }
 

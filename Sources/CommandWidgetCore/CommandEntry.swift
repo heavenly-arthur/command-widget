@@ -7,6 +7,10 @@ public enum CommandCategory: String, Codable, CaseIterable, Identifiable, Sendab
     case linux = "Linux"
     case ansible = "Ansible"
     case terraform = "Terraform"
+    case ollama = "Ollama"
+    case crowdsec = "CrowdSec"
+    case mattermost = "Mattermost"
+    case git = "Git"
 
     public var id: String { rawValue }
 }

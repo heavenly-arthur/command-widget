@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Персональное нативное приложение для macOS, которое держит под рукой команды и шпаргалки по Kubernetes, Helm, Flux, Linux, Ansible и Terraform.
+Персональное нативное приложение для macOS, которое держит под рукой команды и шпаргалки по Kubernetes, Helm, Flux, Linux, Ansible, Terraform, Ollama, CrowdSec, Mattermost и Git.
 
 ## Владелец и среда
 

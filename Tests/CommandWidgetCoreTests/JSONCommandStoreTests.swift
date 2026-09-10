@@ -8,6 +8,21 @@ final class JSONCommandStoreTests: XCTestCase {
         XCTAssertEqual(categories, Set(CommandCategory.allCases))
     }
 
+    func testNewCategoriesContainTwentyCommandsWithExamples() {
+        let categories: [CommandCategory] = [.ollama, .crowdsec, .mattermost, .git]
+
+        for category in categories {
+            let entries = StarterCatalog.entries.filter { $0.category == category }
+            XCTAssertGreaterThanOrEqual(entries.count, 20, "\(category.rawValue) must contain at least 20 commands")
+            XCTAssertLessThanOrEqual(entries.count, 30, "\(category.rawValue) must contain no more than 30 commands")
+            XCTAssertTrue(entries.allSatisfy { !$0.command.isEmpty && !$0.summary.isEmpty && !$0.details.isEmpty && !$0.examples.isEmpty })
+        }
+    }
+
+    func testStarterCatalogHasUniqueIDs() {
+        XCTAssertEqual(Set(StarterCatalog.entries.map(\.id)).count, StarterCatalog.entries.count)
+    }
+
     func testFirstLoadCreatesCatalog() throws {
         let fixture = try Fixture()
         let catalog = try fixture.store.loadOrSeed(
@@ -73,12 +88,13 @@ final class JSONCommandStoreTests: XCTestCase {
 
         let upgraded = try fixture.store.loadOrSeed(
             with: StarterCatalog.entries,
-            bundledVersion: StarterCatalog.currentVersion
+            bundledVersion: 3
         )
 
-        XCTAssertEqual(upgraded.entries.count, StarterCatalog.entries.count)
+        let versionThreeCount = StarterCatalog.entries.filter { ($0.bundledVersion ?? 1) <= 3 }.count
+        XCTAssertEqual(upgraded.entries.count, versionThreeCount)
         XCTAssertEqual(upgraded.entries.first { $0.id == original[0].id }?.title, "Моё название")
-        XCTAssertEqual(upgraded.bundledCatalogVersion, StarterCatalog.currentVersion)
+        XCTAssertEqual(upgraded.bundledCatalogVersion, 3)
     }
 
     func testCurrentVersionDoesNotRestoreDeletedBundledEntry() throws {
@@ -96,6 +112,59 @@ final class JSONCommandStoreTests: XCTestCase {
         )
 
         XCTAssertFalse(reloaded.entries.contains { $0.id == removedID })
+    }
+
+    func testVersionTwoUpgradeAddsSixLinuxEntriesOnceAndPreservesExistingOrder() throws {
+        let fixture = try Fixture()
+        var versionTwoEntries = StarterCatalog.entries.filter { ($0.bundledVersion ?? 1) <= 2 }
+        versionTwoEntries = CommandOrdering.moving(
+            versionTwoEntries,
+            in: .linux,
+            fromOffsets: IndexSet(integer: 7),
+            toOffset: 0
+        )
+        let existingLinuxIDs = CommandOrdering.sorted(versionTwoEntries, in: .linux).map(\.id)
+        try fixture.store.save(StoredCommandCatalog(
+            bundledCatalogVersion: 2,
+            entries: versionTwoEntries
+        ))
+
+        let upgraded = try fixture.store.loadOrSeed(
+            with: StarterCatalog.entries,
+            bundledVersion: 3
+        )
+        let upgradedLinux = CommandOrdering.sorted(upgraded.entries, in: .linux)
+
+        XCTAssertEqual(upgraded.bundledCatalogVersion, 3)
+        XCTAssertEqual(upgradedLinux.count, 14)
+        XCTAssertEqual(Array(upgradedLinux.prefix(existingLinuxIDs.count)).map(\.id), existingLinuxIDs)
+        XCTAssertEqual(upgradedLinux.suffix(6).map(\.bundledVersion), Array(repeating: 3, count: 6))
+
+        let reloaded = try fixture.store.loadOrSeed(
+            with: StarterCatalog.entries,
+            bundledVersion: 3
+        )
+        XCTAssertEqual(reloaded.entries, upgraded.entries)
+    }
+
+    func testVersionThreeUpgradeAddsNewCategoriesWithoutChangingExistingEntries() throws {
+        let fixture = try Fixture()
+        let versionThreeEntries = StarterCatalog.entries.filter { ($0.bundledVersion ?? 1) <= 3 }
+        try fixture.store.save(StoredCommandCatalog(
+            bundledCatalogVersion: 3,
+            entries: versionThreeEntries
+        ))
+
+        let upgraded = try fixture.store.loadOrSeed(
+            with: StarterCatalog.entries,
+            bundledVersion: StarterCatalog.currentVersion
+        )
+
+        XCTAssertEqual(upgraded.bundledCatalogVersion, 4)
+        XCTAssertEqual(upgraded.entries.filter { ($0.bundledVersion ?? 1) == 4 }.count, 80)
+        XCTAssertTrue(versionThreeEntries.allSatisfy { oldEntry in
+            upgraded.entries.contains { $0 == oldEntry }
+        })
     }
 }
 

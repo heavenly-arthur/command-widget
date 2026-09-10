@@ -10,6 +10,10 @@
 | Linux | `Sources/CommandWidgetCore/Catalogs/LinuxCatalog.swift` |
 | Ansible | `Sources/CommandWidgetCore/Catalogs/AnsibleCatalog.swift` |
 | Terraform | `Sources/CommandWidgetCore/Catalogs/TerraformCatalog.swift` |
+| Ollama | `Sources/CommandWidgetCore/Catalogs/OllamaCatalog.swift` |
+| CrowdSec | `Sources/CommandWidgetCore/Catalogs/CrowdSecCatalog.swift` |
+| Mattermost | `Sources/CommandWidgetCore/Catalogs/MattermostCatalog.swift` |
+| Git | `Sources/CommandWidgetCore/Catalogs/GitCatalog.swift` |
 
 ## Контракт записи
 
