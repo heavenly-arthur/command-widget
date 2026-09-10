@@ -1,0 +1,4 @@
+interface:
+  display_name: "Widget PM"
+  short_description: "Планирование и развитие продукта"
+  default_prompt: "Используй $widget-pm, чтобы спланировать следующую итерацию продукта."

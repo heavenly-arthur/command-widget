@@ -1,0 +1,4 @@
+interface:
+  display_name: "Widget QA"
+  short_description: "Тестирование качества macOS-приложения"
+  default_prompt: "Используй $widget-qa, чтобы проверить текущий инкремент продукта."

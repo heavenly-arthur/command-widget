@@ -1,0 +1,4 @@
+interface:
+  display_name: "Widget Dev"
+  short_description: "Разработка нативного macOS-виджета"
+  default_prompt: "Используй $widget-dev, чтобы реализовать следующую согласованную функцию."
