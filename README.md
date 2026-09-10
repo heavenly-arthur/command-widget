@@ -61,7 +61,8 @@ swift test --disable-sandbox
 
 ```text
 Sources/CommandWidget/       интерфейс SwiftUI и AppKit-панель
-Sources/CommandWidgetCore/   модель, локальное хранилище, поиск, порядок, каталог
+Sources/CommandWidgetCore/   модель, локальное хранилище, поиск и порядок
+  Catalogs/                  отдельный файл базы знаний для каждой категории
 Tests/                       unit-тесты
 docs/product/                scope, backlog и решения
 docs/qa/                     отчёты проверок
@@ -71,3 +72,5 @@ scripts/build_app.sh         сборка персонального .app bundle
 ## Статус
 
 Продукт развивается через независимые этапы PM → Dev → QA. Актуальный backlog находится в [`docs/product/BACKLOG.md`](docs/product/BACKLOG.md).
+
+Правила наполнения базы отдельными агентами описаны в [`docs/product/CATALOG_CONTRIBUTING.md`](docs/product/CATALOG_CONTRIBUTING.md).
