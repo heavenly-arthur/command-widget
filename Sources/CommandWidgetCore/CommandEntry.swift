@@ -11,8 +11,31 @@ public enum CommandCategory: String, Codable, CaseIterable, Identifiable, Sendab
     case crowdsec = "CrowdSec"
     case mattermost = "Mattermost"
     case git = "Git"
+    case nodeJS = "Node.js"
+    case typescript = "TypeScript"
+    case frontendTooling = "Frontend Tooling"
+    case frontendTesting = "Frontend Testing"
+    case python = "Python"
+    case go = "Go"
+    case databases = "Databases"
+    case apiAndGRPC = "API & gRPC"
+    case apiTesting = "API Testing"
+    case uiTesting = "UI Testing"
+    case loadTesting = "Load Testing"
+    case mobileAccessibility = "Mobile & Accessibility"
 
     public var id: String { rawValue }
+
+    public var bundledVersion: Int {
+        switch self {
+        case .nodeJS, .typescript, .frontendTooling, .frontendTesting,
+             .python, .go, .databases, .apiAndGRPC,
+             .apiTesting, .uiTesting, .loadTesting, .mobileAccessibility:
+            return 5
+        default:
+            return 4
+        }
+    }
 }
 
 public struct CommandEntry: Codable, Identifiable, Equatable, Sendable {

@@ -157,7 +157,7 @@ final class JSONCommandStoreTests: XCTestCase {
 
         let upgraded = try fixture.store.loadOrSeed(
             with: StarterCatalog.entries,
-            bundledVersion: StarterCatalog.currentVersion
+            bundledVersion: 4
         )
 
         XCTAssertEqual(upgraded.bundledCatalogVersion, 4)
@@ -165,6 +165,40 @@ final class JSONCommandStoreTests: XCTestCase {
         XCTAssertTrue(versionThreeEntries.allSatisfy { oldEntry in
             upgraded.entries.contains { $0 == oldEntry }
         })
+    }
+
+    func testVersionFourUpgradeAddsRoleCatalogsAndPreservesUserChanges() throws {
+        let fixture = try Fixture()
+        var versionFourEntries = StarterCatalog.entries.filter { ($0.bundledVersion ?? 1) <= 4 }
+        versionFourEntries = CommandOrdering.moving(
+            versionFourEntries,
+            in: .kubernetes,
+            fromOffsets: IndexSet(integer: 0),
+            toOffset: 3
+        )
+        versionFourEntries[0].title = "Моя сохранённая команда"
+        let modifiedID = versionFourEntries[0].id
+        let expectedKubernetesOrder = CommandOrdering.sorted(versionFourEntries, in: .kubernetes).map(\.id)
+        try fixture.store.save(StoredCommandCatalog(
+            bundledCatalogVersion: 4,
+            entries: versionFourEntries
+        ))
+
+        let upgraded = try fixture.store.loadOrSeed(
+            with: StarterCatalog.entries,
+            bundledVersion: StarterCatalog.currentVersion
+        )
+
+        XCTAssertEqual(upgraded.bundledCatalogVersion, 5)
+        XCTAssertEqual(upgraded.entries.filter { ($0.bundledVersion ?? 1) == 5 }.count, 96)
+        XCTAssertEqual(
+            upgraded.entries.first { $0.id == modifiedID }?.title,
+            "Моя сохранённая команда"
+        )
+        XCTAssertEqual(
+            CommandOrdering.sorted(upgraded.entries, in: .kubernetes).map(\.id),
+            expectedKubernetesOrder
+        )
     }
 }
 

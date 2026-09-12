@@ -59,4 +59,44 @@ public enum CommandOrdering {
         }
         return result
     }
+
+    public static func moving(
+        _ entries: [CommandEntry],
+        within subcategory: CommandSubcategory,
+        fromOffsets source: IndexSet,
+        toOffset destination: Int
+    ) -> [CommandEntry] {
+        let categoryPositions = entries.indices.filter {
+            entries[$0].category == subcategory.category
+        }
+        var categoryEntries = sorted(entries, in: subcategory.category)
+        let subcategoryPositions = categoryEntries.indices.filter {
+            categoryEntries[$0].subcategory == subcategory
+        }
+        var subcategoryEntries = subcategoryPositions.map { categoryEntries[$0] }
+        let validSource = source.filter { subcategoryEntries.indices.contains($0) }.sorted()
+        guard !validSource.isEmpty else { return entries }
+
+        let movingEntries = validSource.map { subcategoryEntries[$0] }
+        for index in validSource.reversed() {
+            subcategoryEntries.remove(at: index)
+        }
+
+        let removedBeforeDestination = validSource.filter { $0 < destination }.count
+        let insertion = max(0, min(destination - removedBeforeDestination, subcategoryEntries.count))
+        subcategoryEntries.insert(contentsOf: movingEntries, at: insertion)
+
+        for (position, entry) in zip(subcategoryPositions, subcategoryEntries) {
+            categoryEntries[position] = entry
+        }
+
+        var result = entries
+        for (order, pair) in zip(categoryPositions, categoryEntries).enumerated() {
+            let position = pair.0
+            var entry = pair.1
+            entry.order = order
+            result[position] = entry
+        }
+        return result
+    }
 }

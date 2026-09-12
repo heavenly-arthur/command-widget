@@ -14,6 +14,18 @@
 | CrowdSec | `Sources/CommandWidgetCore/Catalogs/CrowdSecCatalog.swift` |
 | Mattermost | `Sources/CommandWidgetCore/Catalogs/MattermostCatalog.swift` |
 | Git | `Sources/CommandWidgetCore/Catalogs/GitCatalog.swift` |
+| Node.js | `Sources/CommandWidgetCore/Catalogs/NodeJSCatalog.swift` |
+| TypeScript | `Sources/CommandWidgetCore/Catalogs/TypeScriptCatalog.swift` |
+| Frontend Tooling | `Sources/CommandWidgetCore/Catalogs/FrontendToolingCatalog.swift` |
+| Frontend Testing | `Sources/CommandWidgetCore/Catalogs/FrontendTestingCatalog.swift` |
+| Python | `Sources/CommandWidgetCore/Catalogs/PythonCatalog.swift` |
+| Go | `Sources/CommandWidgetCore/Catalogs/GoCatalog.swift` |
+| Databases | `Sources/CommandWidgetCore/Catalogs/DatabasesCatalog.swift` |
+| API & gRPC | `Sources/CommandWidgetCore/Catalogs/APIAndGRPCCatalog.swift` |
+| API Testing | `Sources/CommandWidgetCore/Catalogs/APITestingCatalog.swift` |
+| UI Testing | `Sources/CommandWidgetCore/Catalogs/UITestingCatalog.swift` |
+| Load Testing | `Sources/CommandWidgetCore/Catalogs/LoadTestingCatalog.swift` |
+| Mobile & Accessibility | `Sources/CommandWidgetCore/Catalogs/MobileAccessibilityCatalog.swift` |
 
 ## Контракт записи
 

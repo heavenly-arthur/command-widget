@@ -34,15 +34,21 @@ private final class FloatingPanelPresenter: PanelPresenting {
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first ?? FileManager.default.temporaryDirectory
+        let dataDirectory = applicationSupport
+            .appendingPathComponent("CommandWidget", isDirectory: true)
         let store = JSONCommandStore(
-            fileURL: applicationSupport
-                .appendingPathComponent("CommandWidget", isDirectory: true)
-                .appendingPathComponent("commands.json")
+            fileURL: dataDirectory.appendingPathComponent("commands.json")
         )
-        let viewModel = CommandLibraryViewModel(store: store)
+        let preferencesStore = JSONLibraryPreferencesStore(
+            fileURL: dataDirectory.appendingPathComponent("preferences.json")
+        )
+        let viewModel = CommandLibraryViewModel(
+            store: store,
+            preferencesStore: preferencesStore
+        )
 
         panel = FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 560),
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
             styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -54,7 +60,7 @@ private final class FloatingPanelPresenter: PanelPresenting {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.minSize = NSSize(width: 600, height: 420)
+        panel.minSize = NSSize(width: 700, height: 560)
         panel.contentViewController = NSHostingController(
             rootView: CommandLibraryView(viewModel: viewModel)
         )
