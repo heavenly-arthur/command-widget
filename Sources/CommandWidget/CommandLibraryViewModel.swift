@@ -8,15 +8,23 @@ final class CommandLibraryViewModel: ObservableObject {
     @Published var query = ""
     @Published private(set) var errorMessage: String?
     @Published private(set) var preferences = LibraryPreferences.initial
+    @Published private(set) var customTaxonomy = CustomCommandTaxonomy()
     @Published var isPresentingPreferences = false
+    @Published var isPresentingCustomTaxonomy = false
     @Published private(set) var requiresInitialSetup = false
     private let store: JSONCommandStore
     private let preferencesStore: JSONLibraryPreferencesStore
+    private let customTaxonomyStore: JSONCustomTaxonomyStore
     private var catalog: StoredCommandCatalog?
 
-    init(store: JSONCommandStore, preferencesStore: JSONLibraryPreferencesStore) {
+    init(
+        store: JSONCommandStore,
+        preferencesStore: JSONLibraryPreferencesStore,
+        customTaxonomyStore: JSONCustomTaxonomyStore
+    ) {
         self.store = store
         self.preferencesStore = preferencesStore
+        self.customTaxonomyStore = customTaxonomyStore
         do {
             let catalog = try store.loadOrSeed(
                 with: StarterCatalog.entries,
@@ -46,6 +54,12 @@ final class CommandLibraryViewModel: ObservableObject {
             isPresentingPreferences = true
             errorMessage = "Не удалось прочитать настройки: \(error.localizedDescription)"
         }
+
+        do {
+            customTaxonomy = try customTaxonomyStore.load() ?? CustomCommandTaxonomy()
+        } catch {
+            errorMessage = "Не удалось прочитать пользовательские категории: \(error.localizedDescription)"
+        }
     }
 
     var selectedEntry: CommandEntry? {
@@ -59,6 +73,32 @@ final class CommandLibraryViewModel: ObservableObject {
 
     var visibleCategories: [CommandCategory] {
         CommandCategory.allCases.filter { preferences.selectedCategories.contains($0) }
+    }
+
+    var visibleCustomCategories: [CustomCommandCategory] {
+        let enabled = customTaxonomy.categories.filter(\.isEnabled)
+        let normalized = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return enabled }
+        return enabled.filter { category in
+            category.title.localizedCaseInsensitiveContains(normalized)
+                || category.subcategories.contains {
+                    $0.isEnabled && $0.title.localizedCaseInsensitiveContains(normalized)
+                }
+        }
+    }
+
+    var hasVisibleContent: Bool {
+        !filteredEntries.isEmpty || !visibleCustomCategories.isEmpty
+    }
+
+    func subcategories(in category: CustomCommandCategory) -> [CustomCommandSubcategory] {
+        let enabled = category.subcategories.filter(\.isEnabled)
+        let normalized = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalized.isEmpty else { return enabled }
+        if category.title.localizedCaseInsensitiveContains(normalized) {
+            return enabled
+        }
+        return enabled.filter { $0.title.localizedCaseInsensitiveContains(normalized) }
     }
 
     func entries(in category: CommandCategory) -> [CommandEntry] {
@@ -89,6 +129,27 @@ final class CommandLibraryViewModel: ObservableObject {
     func hidePreferences() {
         guard !requiresInitialSetup else { return }
         isPresentingPreferences = false
+    }
+
+    func showCustomTaxonomy() {
+        isPresentingCustomTaxonomy = true
+    }
+
+    func hideCustomTaxonomy() {
+        isPresentingCustomTaxonomy = false
+    }
+
+    @discardableResult
+    func saveCustomTaxonomy(_ updated: CustomCommandTaxonomy) -> Bool {
+        do {
+            try customTaxonomyStore.save(updated)
+            customTaxonomy = updated
+            isPresentingCustomTaxonomy = false
+            return true
+        } catch {
+            errorMessage = "Не удалось сохранить пользовательские категории: \(error.localizedDescription)"
+            return false
+        }
     }
 
     @discardableResult

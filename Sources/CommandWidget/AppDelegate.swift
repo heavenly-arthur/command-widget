@@ -42,9 +42,13 @@ private final class FloatingPanelPresenter: PanelPresenting {
         let preferencesStore = JSONLibraryPreferencesStore(
             fileURL: dataDirectory.appendingPathComponent("preferences.json")
         )
+        let customTaxonomyStore = JSONCustomTaxonomyStore(
+            fileURL: dataDirectory.appendingPathComponent("custom-taxonomy.json")
+        )
         let viewModel = CommandLibraryViewModel(
             store: store,
-            preferencesStore: preferencesStore
+            preferencesStore: preferencesStore,
+            customTaxonomyStore: customTaxonomyStore
         )
 
         panel = FloatingPanel(

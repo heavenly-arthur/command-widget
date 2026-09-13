@@ -6,6 +6,8 @@ struct CommandLibraryView: View {
     @ObservedObject var viewModel: CommandLibraryViewModel
     @State private var expandedCategories: Set<CommandCategory> = []
     @State private var expandedSubcategories: Set<CommandSubcategory> = []
+    @State private var expandedCustomCategories: Set<UUID> = []
+    @State private var expandedCustomSubcategories: Set<UUID> = []
 
     var body: some View {
         ZStack {
@@ -102,11 +104,91 @@ struct CommandLibraryView: View {
                         .accessibilityHint(expandedCategories.contains(category) ? "Свернуть категорию" : "Развернуть категорию")
                     }
                 }
+
+                ForEach(viewModel.visibleCustomCategories) { category in
+                    Section {
+                        if expandedCustomCategories.contains(category.id) {
+                            let subcategories = viewModel.subcategories(in: category)
+                            if subcategories.isEmpty {
+                                Text("Нет включённых подкатегорий")
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 16)
+                            } else {
+                                ForEach(subcategories) { subcategory in
+                                    Button {
+                                        toggleCustomSubcategory(subcategory.id)
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(
+                                                systemName: expandedCustomSubcategories.contains(subcategory.id)
+                                                    ? "chevron.down"
+                                                    : "chevron.right"
+                                            )
+                                            .font(.caption.weight(.semibold))
+                                            .frame(width: 10)
+                                            Text(subcategory.title)
+                                                .font(.subheadline.weight(.semibold))
+                                            Spacer()
+                                            Text("0")
+                                                .font(.caption.monospacedDigit())
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.leading, 8)
+
+                                    if expandedCustomSubcategories.contains(subcategory.id) {
+                                        Text("Команд пока нет")
+                                            .font(.callout)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.leading, 32)
+                                    }
+                                }
+                            }
+                        }
+                    } header: {
+                        Button {
+                            toggleCustomCategory(category.id)
+                        } label: {
+                            HStack {
+                                Image(
+                                    systemName: expandedCustomCategories.contains(category.id)
+                                        ? "chevron.down"
+                                        : "chevron.right"
+                                )
+                                .font(.caption.weight(.semibold))
+                                .frame(width: 10)
+                                Text(category.title)
+                                    .font(.headline)
+                                Image(systemName: "person.crop.circle")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Text("0")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Пользовательская категория \(category.title)")
+                    }
+                }
                 }
                 .navigationTitle("Команды")
                 .navigationSplitViewColumnWidth(min: 230, ideal: 270)
                 .searchable(text: $viewModel.query, prompt: "Команда, категория или тег")
                 .toolbar {
+                    ToolbarItem {
+                        Button {
+                            viewModel.showCustomTaxonomy()
+                        } label: {
+                            Label("Мои категории", systemImage: "folder.badge.plus")
+                        }
+                        .help("Добавить или изменить пользовательские категории")
+                    }
                     ToolbarItem {
                         Button {
                             viewModel.showPreferences()
@@ -117,7 +199,7 @@ struct CommandLibraryView: View {
                     }
                 }
                 .overlay {
-                    if viewModel.filteredEntries.isEmpty {
+                    if !viewModel.hasVisibleContent {
                         ContentUnavailableView.search(text: viewModel.query)
                     }
                 }
@@ -127,12 +209,20 @@ struct CommandLibraryView: View {
                     if normalized.isEmpty {
                         expandedCategories.removeAll()
                         expandedSubcategories.removeAll()
+                        expandedCustomCategories.removeAll()
+                        expandedCustomSubcategories.removeAll()
                     } else {
                         expandedCategories = Set(
                             viewModel.visibleCategories.filter { !viewModel.entries(in: $0).isEmpty }
                         )
                         expandedSubcategories = Set(
                             viewModel.visibleCategories.flatMap(viewModel.subcategories)
+                        )
+                        expandedCustomCategories = Set(viewModel.visibleCustomCategories.map(\.id))
+                        expandedCustomSubcategories = Set(
+                            viewModel.visibleCustomCategories.flatMap {
+                                viewModel.subcategories(in: $0).map(\.id)
+                            }
                         )
                     }
                 }
@@ -153,8 +243,10 @@ struct CommandLibraryView: View {
             if viewModel.isPresentingPreferences {
                 LibraryPreferencesView(
                     preferences: viewModel.preferences,
+                    customCategoryCount: viewModel.customTaxonomy.categories.count,
                     isInitialSetup: viewModel.requiresInitialSetup,
-                    onCancel: viewModel.hidePreferences
+                    onCancel: viewModel.hidePreferences,
+                    onManageCustomTaxonomy: viewModel.showCustomTaxonomy
                 ) { roles, categories, subcategories in
                     viewModel.savePreferences(
                         roles: roles,
@@ -164,6 +256,16 @@ struct CommandLibraryView: View {
                 }
                 .transition(.opacity)
                 .zIndex(1)
+            }
+
+            if viewModel.isPresentingCustomTaxonomy {
+                CustomTaxonomyManagerView(
+                    taxonomy: viewModel.customTaxonomy,
+                    onCancel: viewModel.hideCustomTaxonomy,
+                    onSave: viewModel.saveCustomTaxonomy
+                )
+                .transition(.opacity)
+                .zIndex(2)
             }
         }
         .alert(
@@ -194,6 +296,22 @@ struct CommandLibraryView: View {
             expandedSubcategories.insert(subcategory)
         }
     }
+
+    private func toggleCustomCategory(_ id: UUID) {
+        if expandedCustomCategories.contains(id) {
+            expandedCustomCategories.remove(id)
+        } else {
+            expandedCustomCategories.insert(id)
+        }
+    }
+
+    private func toggleCustomSubcategory(_ id: UUID) {
+        if expandedCustomSubcategories.contains(id) {
+            expandedCustomSubcategories.remove(id)
+        } else {
+            expandedCustomSubcategories.insert(id)
+        }
+    }
 }
 
 private struct LibraryPreferencesView: View {
@@ -201,21 +319,27 @@ private struct LibraryPreferencesView: View {
     @State private var selectedCategories: Set<CommandCategory>
     @State private var selectedSubcategories: Set<CommandSubcategory>
     @State private var expandedCategories: Set<CommandCategory> = []
+    let customCategoryCount: Int
     let isInitialSetup: Bool
     let onCancel: () -> Void
+    let onManageCustomTaxonomy: () -> Void
     let onSave: (Set<CommandRole>, Set<CommandCategory>, Set<CommandSubcategory>) -> Bool
 
     init(
         preferences: LibraryPreferences,
+        customCategoryCount: Int,
         isInitialSetup: Bool,
         onCancel: @escaping () -> Void,
+        onManageCustomTaxonomy: @escaping () -> Void,
         onSave: @escaping (Set<CommandRole>, Set<CommandCategory>, Set<CommandSubcategory>) -> Bool
     ) {
         _selectedRoles = State(initialValue: preferences.selectedRoles)
         _selectedCategories = State(initialValue: preferences.selectedCategories)
         _selectedSubcategories = State(initialValue: preferences.effectiveSelectedSubcategories)
+        self.customCategoryCount = customCategoryCount
         self.isInitialSetup = isInitialSetup
         self.onCancel = onCancel
+        self.onManageCustomTaxonomy = onManageCustomTaxonomy
         self.onSave = onSave
     }
 
@@ -231,6 +355,24 @@ private struct LibraryPreferencesView: View {
             GroupBox("Роли") {
                 roleGrid
                     .padding(.top, 6)
+            }
+
+            GroupBox("Мои категории") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(customCategoryCount == 0
+                            ? "Пользовательских категорий пока нет"
+                            : "Пользовательских категорий: \(customCategoryCount)")
+                        Text("Собственные категории не зависят от выбранных ролей.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Управлять") {
+                        onManageCustomTaxonomy()
+                    }
+                }
+                .padding(.top, 6)
             }
 
             GroupBox("Категории CLI") {
